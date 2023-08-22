@@ -1,0 +1,66 @@
+version: '3'
+services:
+  mysql:
+    image: mysql:5.7
+    hostname: mysql
+    networks:
+      - lavagna_network
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - db_lavagna:/var/lib/mysql
+      - ./sqldump/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+    
+  lavagna-app:
+    build:
+      context: .
+      dockerfile: thin-Dockerfile
+    hostname: lavagna-app
+    container_name: lavagna
+    networks:
+      - lavagna_network
+#      - nginx_network
+    environment:
+      DB_DIALECT: ${DB_DIALECT}
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      SPRING_PROFILE: ${SPRING_PROFILE}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+#older version 1.25.2-alpine   
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    
+    ports:
+      - "80:80"
+    networks:
+      - lavagna_network
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./webapp:/usr/share/nginx/html/webapp/
+      - ./volume/help:/usr/share/nginx/docs
+      - ./project/src/main/webapp:/usr/share/nginx/webapp
+   
+    depends_on:
+      - lavagna-app
+
+volumes:
+  db_lavagna:
+  webapp:
+
+networks:
+   lavagna_network:
+#   nginx_network:
+#      driver: brige
+

@@ -1,0 +1,20 @@
+FROM maven:3.6.3-openjdk-8 AS builder
+WORKDIR /app
+EXPOSE 8080
+COPY src ./src
+COPY pom.xml .
+COPY package*.json .
+COPY puppet ./puppet
+COPY misc ./misc
+COPY LICENSE-GPLv3.txt .
+COPY sqldump ./sqldump
+RUN mvn package
+
+
+FROM openjdk:8-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/target/lavagna-jetty-console.war target/
+COPY --from=builder /app/target/lavagna target/lavagna
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+ENTRYPOINT [ "./entrypoint.sh" ]
