@@ -1,0 +1,10 @@
+FROM maven:3.6.3-openjdk-8 AS builder
+WORKDIR /app
+COPY src ./src
+COPY pom.xml .
+COPY package*.json .
+COPY puppet ./puppet
+COPY misc ./misc
+COPY LICENSE-GPLv3.txt .
+
+ENTRYPOINT [ "mvn","package" ]
